@@ -16,13 +16,13 @@ flags.DEFINE_string('output_file', 'realdata_eval_output.csv', 'CSV file of eval
 FLAGS = flags.FLAGS
 
 def load_graph(filename):
-    with tf.gfile.FastGFile(filename, 'rb') as f:
-        graph_def = tf.GraphDef()
+    with tf.compat.v1.gfile.FastGFile(filename, 'rb') as f:
+        graph_def = tf.compat.v1.GraphDef()
         graph_def.ParseFromString(f.read())
         tf.import_graph_def(graph_def, name='')
 
 def load_labels(filename):
-    return [line.rstrip() for line in tf.gfile.FastGFile(filename)]
+    return [line.rstrip() for line in tf.compat.v1.gfile.FastGFile(filename)]
 
 
 def load_audiofile(filename):
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     csv_writer = csv.DictWriter(output_fh, fieldnames=fieldnames)
     print(fieldnames)
     csv_writer.writeheader()
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         output_node = sess.graph.get_tensor_by_name(output_node_name) 
         for label_idx, label_name in enumerate(labels):
             case_dir = format("%s/%s" %(output_dir, label_name))

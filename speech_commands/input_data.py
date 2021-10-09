@@ -115,8 +115,8 @@ def load_wav_file(filename):
   Returns:
     Numpy array holding the sample data as floats between -1.0 and 1.0.
   """
-  with tf.Session(graph=tf.Graph()) as sess:
-    wav_filename_placeholder = tf.placeholder(tf.string, [])
+  with tf.compat.v1.Session(graph=tf.Graph()) as sess:
+    wav_filename_placeholder = tf.compat.v1.placeholder(tf.string, [])
     wav_loader = io_ops.read_file(wav_filename_placeholder)
     wav_decoder = contrib_audio.decode_wav(wav_loader, desired_channels=1)
     return sess.run(
@@ -132,10 +132,10 @@ def save_wav_file(filename, wav_data, sample_rate):
     wav_data: 2D array of float PCM-encoded audio data.
     sample_rate: Samples per second to encode in the file.
   """
-  with tf.Session(graph=tf.Graph()) as sess:
-    wav_filename_placeholder = tf.placeholder(tf.string, [])
-    sample_rate_placeholder = tf.placeholder(tf.int32, [])
-    wav_data_placeholder = tf.placeholder(tf.float32, [None, 1])
+  with tf.compat.v1.Session(graph=tf.Graph()) as sess:
+    wav_filename_placeholder = tf.compat.v1.placeholder(tf.string, [])
+    sample_rate_placeholder = tf.compat.v1.placeholder(tf.int32, [])
+    wav_data_placeholder = tf.compat.v1.placeholder(tf.float32, [None, 1])
     wav_encoder = contrib_audio.encode_wav(wav_data_placeholder,
                                            sample_rate_placeholder)
     wav_saver = io_ops.write_file(wav_filename_placeholder, wav_encoder)
@@ -192,14 +192,14 @@ class AudioProcessor(object):
       try:
         filepath, _ = urllib.request.urlretrieve(data_url, filepath, _progress)
       except:
-        tf.logging.error('Failed to download URL: %s to folder: %s', data_url,
+        tf.compat.v1.logging.error('Failed to download URL: %s to folder: %s', data_url,
                          filepath)
-        tf.logging.error('Please make sure you have enough free space and'
+        tf.compat.v1.logging.error('Please make sure you have enough free space and'
                          ' an internet connection')
         raise
       print()
       statinfo = os.stat(filepath)
-      tf.logging.info('Successfully downloaded %s (%d bytes)', filename,
+      tf.compat.v1.logging.info('Successfully downloaded %s (%d bytes)', filename,
                       statinfo.st_size)
     tarfile.open(filepath, 'r:gz').extractall(dest_directory)
 
@@ -310,8 +310,8 @@ class AudioProcessor(object):
     background_dir = os.path.join(self.data_dir, BACKGROUND_NOISE_DIR_NAME)
     if not os.path.exists(background_dir):
       return self.background_data
-    with tf.Session(graph=tf.Graph()) as sess:
-      wav_filename_placeholder = tf.placeholder(tf.string, [])
+    with tf.compat.v1.Session(graph=tf.Graph()) as sess:
+      wav_filename_placeholder = tf.compat.v1.placeholder(tf.string, [])
       wav_loader = io_ops.read_file(wav_filename_placeholder)
       wav_decoder = contrib_audio.decode_wav(wav_loader, desired_channels=1)
       search_path = os.path.join(self.data_dir, BACKGROUND_NOISE_DIR_NAME,
@@ -346,28 +346,28 @@ class AudioProcessor(object):
       model_settings: Information about the current model being trained.
     """
     desired_samples = model_settings['desired_samples']
-    self.wav_filename_placeholder_ = tf.placeholder(tf.string, [])
+    self.wav_filename_placeholder_ = tf.compat.v1.placeholder(tf.string, [])
     wav_loader = io_ops.read_file(self.wav_filename_placeholder_)
     wav_decoder = contrib_audio.decode_wav(
         wav_loader, desired_channels=1, desired_samples=desired_samples)
     # Allow the audio sample's volume to be adjusted.
-    self.foreground_volume_placeholder_ = tf.placeholder(tf.float32, [])
+    self.foreground_volume_placeholder_ = tf.compat.v1.placeholder(tf.float32, [])
     scaled_foreground = tf.multiply(wav_decoder.audio,
                                     self.foreground_volume_placeholder_)
     # Shift the sample's start position, and pad any gaps with zeros.
-    self.time_shift_padding_placeholder_ = tf.placeholder(tf.int32, [2, 2])
-    self.time_shift_offset_placeholder_ = tf.placeholder(tf.int32, [2])
+    self.time_shift_padding_placeholder_ = tf.compat.v1.placeholder(tf.int32, [2, 2])
+    self.time_shift_offset_placeholder_ = tf.compat.v1.placeholder(tf.int32, [2])
     padded_foreground = tf.pad(
-        scaled_foreground,
-        self.time_shift_padding_placeholder_,
+        tensor=scaled_foreground,
+        paddings=self.time_shift_padding_placeholder_,
         mode='CONSTANT')
     sliced_foreground = tf.slice(padded_foreground,
                                  self.time_shift_offset_placeholder_,
                                  [desired_samples, -1])
     # Mix in background noise.
-    self.background_data_placeholder_ = tf.placeholder(tf.float32,
+    self.background_data_placeholder_ = tf.compat.v1.placeholder(tf.float32,
                                                        [desired_samples, 1])
-    self.background_volume_placeholder_ = tf.placeholder(tf.float32, [])
+    self.background_volume_placeholder_ = tf.compat.v1.placeholder(tf.float32, [])
     background_mul = tf.multiply(self.background_data_placeholder_,
                                  self.background_volume_placeholder_)
     background_add = tf.add(background_mul, sliced_foreground)
@@ -507,12 +507,12 @@ class AudioProcessor(object):
     words_list = self.words_list
     data = np.zeros((sample_count, desired_samples))
     labels = []
-    with tf.Session(graph=tf.Graph()) as sess:
-      wav_filename_placeholder = tf.placeholder(tf.string, [])
+    with tf.compat.v1.Session(graph=tf.Graph()) as sess:
+      wav_filename_placeholder = tf.compat.v1.placeholder(tf.string, [])
       wav_loader = io_ops.read_file(wav_filename_placeholder)
       wav_decoder = contrib_audio.decode_wav(
           wav_loader, desired_channels=1, desired_samples=desired_samples)
-      foreground_volume_placeholder = tf.placeholder(tf.float32, [])
+      foreground_volume_placeholder = tf.compat.v1.placeholder(tf.float32, [])
       scaled_foreground = tf.multiply(wav_decoder.audio,
                                       foreground_volume_placeholder)
       for i in range(sample_count):

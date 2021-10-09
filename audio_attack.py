@@ -1,7 +1,10 @@
 """
-    Author: Moustafa Alzantot (malzantot@ucla.edu)
+    Original Author: Moustafa Alzantot (malzantot@ucla.edu)
     All rights reserved.
+
+    Modified for use in project by Tommy White (tommy.white.gr@dartmouth.edu) and Sabrina Jain in CS87 at Dartmouth
 """
+import argparse
 import os, sys
 import numpy as np
 import sys
@@ -9,14 +12,15 @@ import time
 import tensorflow as tf
 from speech_commands import label_wav
 
+
 def load_graph(filename):
-    with tf.gfile.FastGFile(filename, 'rb') as f:
-        graph_def = tf.GraphDef()
+    with tf.compat.v1.gfile.FastGFile(filename, 'rb') as f:
+        graph_def = tf.compat.v1.GraphDef()
         graph_def.ParseFromString(f.read())
         tf.import_graph_def(graph_def, name='')
 
 def load_labels(filename):
-    return [line.rstrip() for line in tf.gfile.FastGFile(filename)]
+    return [line.rstrip() for line in tf.compat.v1.gfile.FastGFile(filename)]
         
 
 def print_output(output_preds, labels):
@@ -135,26 +139,26 @@ def load_audiofile(filename):
     with open(filename, 'rb') as fh:
         return fh.read()
 
-flags = tf.flags
-flags.DEFINE_string("data_dir", "", "Data dir")
-flags.DEFINE_string("output_dir", "", "Data dir")
-flags.DEFINE_string("target_label", "", "Target classification label")
-flags.DEFINE_integer("limit", 4, "Noise limit")
-flags.DEFINE_string("graph_path", "", "Path to frozen graph file.")
-flags.DEFINE_string("labels_path", "", "Path to labels file.")
-flags.DEFINE_boolean("verbose", False, "")
-flags.DEFINE_integer("max_iters", 200, "Maxmimum number of iterations")
-FLAGS = flags.FLAGS
+argp = argparse.ArgumentParser()
+argp.add_argument('-d', '--data-dir', type=str, default='data')
+argp.add_argument('--output-dir', '-o', type=str, default='output')
+argp.add_argument('--target-label', '-tl', type=str, required=True)
+argp.add_argument('--limit', '-l', type=int, default=4)
+argp.add_argument('--graph-path', '-gp', type=str, required=True, help="Path to frozen graph file.")
+argp.add_argument('--labels-path', '-lp', type=str, required=True, help="Path to labels file.")
+argp.add_argument('--verbose', '-v', action='store_true')
+argp.add_argument('--max-iters', '-m', type=int, default=200)
 
 if __name__ == '__main__':
-    data_dir = FLAGS.data_dir
-    output_dir = FLAGS.output_dir
-    target_label = FLAGS.target_label
-    eps_limit = FLAGS.limit
-    graph_path = FLAGS.graph_path
-    labels_path = FLAGS.labels_path
-    max_iters = FLAGS.max_iters
-    verbose = FLAGS.verbose
+    args = argp.parse_args()
+    data_dir = args.data_dir
+    output_dir = args.output_dir
+    target_label = args.target_label
+    eps_limit = args.limit
+    graph_path = args.graph_path
+    labels_path = args.labels_path
+    max_iters = args.max_iters
+    verbose = args.verbose
     input_node_name = 'wav_data:0'
     output_node_name = 'labels_softmax:0'
 
@@ -170,7 +174,7 @@ if __name__ == '__main__':
     target_idx = target_idx[0]
 
     load_graph(graph_path)
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         output_node = sess.graph.get_tensor_by_name(output_node_name) 
         for input_file in wav_files_list:
             start_time = time.time()

@@ -36,7 +36,8 @@ sample_size=100
 # remove output dir if exists
 if [ -d output ] ; then
     echo "Output directory already exists ! "
-    exit 1
+    rm -rf output
+    # exit 1
 fi
 mkdir output
 
@@ -51,6 +52,8 @@ do
     fi
 done
 
+
+export PYTHONWARNINGS=ignore
 mkdir -p "output/result/"
 for target_label in `ls output/data/`
 do
@@ -62,13 +65,13 @@ do
         echo "Running attack: $source_label --> $target_label"
         output_dir="output/result/$target_label/$source_label"
         mkdir -p $output_dir
-        python audio_attack.py \
-        --data_dir="output/data/$source_label" \
-        --output_dir=$output_dir \
-        --target_label=$target_label \
-        --labels_path=$labels_file \
-        --graph_path=$frozen_graph \
-        --limit=$limit \
-        --max_iters=$max_iters
+        python -Wignore audio_attack.py \
+        --data-dir "output/data/$source_label" \
+        --output-dir $output_dir \
+        --target-label $target_label \
+        --labels-path $labels_file \
+        --graph-path $frozen_graph \
+        --limit $limit \
+        --max-iters $max_iters
     done
 done

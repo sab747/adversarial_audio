@@ -77,7 +77,7 @@ def create_inference_graph(wanted_words, sample_rate, clip_duration_ms,
       window_stride_ms, dct_coefficient_count)
   runtime_settings = {'clip_stride_ms': clip_stride_ms}
 
-  wav_data_placeholder = tf.placeholder(tf.string, [], name='wav_data')
+  wav_data_placeholder = tf.compat.v1.placeholder(tf.string, [], name='wav_data')
   decoded_sample_data = contrib_audio.decode_wav(
       wav_data_placeholder,
       desired_channels=1,
@@ -109,7 +109,7 @@ def create_inference_graph(wanted_words, sample_rate, clip_duration_ms,
 def main(_):
 
   # Create the model and load its weights.
-  sess = tf.InteractiveSession()
+  sess = tf.compat.v1.InteractiveSession()
   create_inference_graph(FLAGS.wanted_words, FLAGS.sample_rate,
                          FLAGS.clip_duration_ms, FLAGS.clip_stride_ms,
                          FLAGS.window_size_ms, FLAGS.window_stride_ms,
@@ -119,12 +119,12 @@ def main(_):
   # Turn all the variables into inline constants inside the graph and save it.
   frozen_graph_def = graph_util.convert_variables_to_constants(
       sess, sess.graph_def, ['labels_softmax'])
-  tf.train.write_graph(
+  tf.io.write_graph(
       frozen_graph_def,
       os.path.dirname(FLAGS.output_file),
       os.path.basename(FLAGS.output_file),
       as_text=False)
-  tf.logging.info('Saved frozen graph to %s', FLAGS.output_file)
+  tf.compat.v1.logging.info('Saved frozen graph to %s', FLAGS.output_file)
 
 
 if __name__ == '__main__':
@@ -177,4 +177,4 @@ if __name__ == '__main__':
   parser.add_argument(
       '--output_file', type=str, help='Where to save the frozen graph.')
   FLAGS, unparsed = parser.parse_known_args()
-  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+  tf.compat.v1.app.run(main=main, argv=[sys.argv[0]] + unparsed)

@@ -87,10 +87,10 @@ FLAGS = None
 
 def main(_):
   # We want to see all the logging messages for this tutorial.
-  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
 
   # Start a new TensorFlow session.
-  sess = tf.InteractiveSession()
+  sess = tf.compat.v1.InteractiveSession()
 
   # Begin by making sure we have the training data we need. If you already have
   # training data of your own, use `--data_url= ` on the command line to avoid
@@ -122,7 +122,7 @@ def main(_):
         'lists, but are %d and %d long instead' % (len(training_steps_list),
                                                    len(learning_rates_list)))
 
-  fingerprint_input = tf.placeholder(
+  fingerprint_input = tf.compat.v1.placeholder(
       tf.float32, [None, fingerprint_size], name='fingerprint_input')
 
   logits, dropout_prob = models.create_model(
@@ -132,46 +132,46 @@ def main(_):
       is_training=True)
 
   # Define loss and optimizer
-  ground_truth_input = tf.placeholder(
+  ground_truth_input = tf.compat.v1.placeholder(
       tf.float32, [None, label_count], name='groundtruth_input')
 
   # Optionally we can add runtime checks to spot when NaNs or other symptoms of
   # numerical errors start occurring during training.
   control_dependencies = []
   if FLAGS.check_nans:
-    checks = tf.add_check_numerics_ops()
+    checks = tf.compat.v1.add_check_numerics_ops()
     control_dependencies = [checks]
 
   # Create the back propagation and training evaluation machinery in the graph.
-  with tf.name_scope('cross_entropy'):
+  with tf.compat.v1.name_scope('cross_entropy'):
     cross_entropy_mean = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(
-            labels=ground_truth_input, logits=logits))
-  tf.summary.scalar('cross_entropy', cross_entropy_mean)
-  with tf.name_scope('train'), tf.control_dependencies(control_dependencies):
-    learning_rate_input = tf.placeholder(
+        input_tensor=tf.nn.softmax_cross_entropy_with_logits(
+            labels=tf.stop_gradient(ground_truth_input), logits=logits))
+  tf.compat.v1.summary.scalar('cross_entropy', cross_entropy_mean)
+  with tf.compat.v1.name_scope('train'), tf.control_dependencies(control_dependencies):
+    learning_rate_input = tf.compat.v1.placeholder(
         tf.float32, [], name='learning_rate_input')
-    train_step = tf.train.GradientDescentOptimizer(
+    train_step = tf.compat.v1.train.GradientDescentOptimizer(
         learning_rate_input).minimize(cross_entropy_mean)
-  predicted_indices = tf.argmax(logits, 1)
-  expected_indices = tf.argmax(ground_truth_input, 1)
+  predicted_indices = tf.argmax(input=logits, axis=1)
+  expected_indices = tf.argmax(input=ground_truth_input, axis=1)
   correct_prediction = tf.equal(predicted_indices, expected_indices)
-  confusion_matrix = tf.confusion_matrix(expected_indices, predicted_indices)
-  evaluation_step = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-  tf.summary.scalar('accuracy', evaluation_step)
+  confusion_matrix = tf.math.confusion_matrix(labels=expected_indices, predictions=predicted_indices)
+  evaluation_step = tf.reduce_mean(input_tensor=tf.cast(correct_prediction, tf.float32))
+  tf.compat.v1.summary.scalar('accuracy', evaluation_step)
 
   global_step = tf.contrib.framework.get_or_create_global_step()
-  increment_global_step = tf.assign(global_step, global_step + 1)
+  increment_global_step = tf.compat.v1.assign(global_step, global_step + 1)
 
-  saver = tf.train.Saver(tf.global_variables())
+  saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables())
 
   # Merge all the summaries and write them out to /tmp/retrain_logs (by default)
-  merged_summaries = tf.summary.merge_all()
-  train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train',
+  merged_summaries = tf.compat.v1.summary.merge_all()
+  train_writer = tf.compat.v1.summary.FileWriter(FLAGS.summaries_dir + '/train',
                                        sess.graph)
-  validation_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/validation')
+  validation_writer = tf.compat.v1.summary.FileWriter(FLAGS.summaries_dir + '/validation')
 
-  tf.global_variables_initializer().run()
+  tf.compat.v1.global_variables_initializer().run()
 
   start_step = 1
 
@@ -179,10 +179,10 @@ def main(_):
     models.load_variables_from_checkpoint(sess, FLAGS.start_checkpoint)
     start_step = global_step.eval(session=sess)
 
-  tf.logging.info('Training from step: %d ', start_step)
+  tf.compat.v1.logging.info('Training from step: %d ', start_step)
 
   # Save graph.pbtxt.
-  tf.train.write_graph(sess.graph_def, FLAGS.train_dir,
+  tf.io.write_graph(sess.graph_def, FLAGS.train_dir,
                        FLAGS.model_architecture + '.pbtxt')
 
   # Save list of words.
@@ -218,7 +218,7 @@ def main(_):
             dropout_prob: 0.5
         })
     train_writer.add_summary(train_summary, training_step)
-    tf.logging.info('Step #%d: rate %f, accuracy %.1f%%, cross entropy %f' %
+    tf.compat.v1.logging.info('Step #%d: rate %f, accuracy %.1f%%, cross entropy %f' %
                     (training_step, learning_rate_value, train_accuracy * 100,
                      cross_entropy_value))
     is_last_step = (training_step == training_steps_max)
@@ -246,8 +246,8 @@ def main(_):
           total_conf_matrix = conf_matrix
         else:
           total_conf_matrix += conf_matrix
-      tf.logging.info('Confusion Matrix:\n %s' % (total_conf_matrix))
-      tf.logging.info('Step %d: Validation accuracy = %.1f%% (N=%d)' %
+      tf.compat.v1.logging.info('Confusion Matrix:\n %s' % (total_conf_matrix))
+      tf.compat.v1.logging.info('Step %d: Validation accuracy = %.1f%% (N=%d)' %
                       (training_step, total_accuracy * 100, set_size))
 
     # Save the model checkpoint periodically.
@@ -255,11 +255,11 @@ def main(_):
         training_step == training_steps_max):
       checkpoint_path = os.path.join(FLAGS.train_dir,
                                      FLAGS.model_architecture + '.ckpt')
-      tf.logging.info('Saving to "%s-%d"', checkpoint_path, training_step)
+      tf.compat.v1.logging.info('Saving to "%s-%d"', checkpoint_path, training_step)
       saver.save(sess, checkpoint_path, global_step=training_step)
 
   set_size = audio_processor.set_size('testing')
-  tf.logging.info('set_size=%d', set_size)
+  tf.compat.v1.logging.info('set_size=%d', set_size)
   total_accuracy = 0
   total_conf_matrix = None
   for i in xrange(0, set_size, FLAGS.batch_size):
@@ -278,8 +278,8 @@ def main(_):
       total_conf_matrix = conf_matrix
     else:
       total_conf_matrix += conf_matrix
-  tf.logging.info('Confusion Matrix:\n %s' % (total_conf_matrix))
-  tf.logging.info('Final test accuracy = %.1f%% (N=%d)' % (total_accuracy * 100,
+  tf.compat.v1.logging.info('Confusion Matrix:\n %s' % (total_conf_matrix))
+  tf.compat.v1.logging.info('Final test accuracy = %.1f%% (N=%d)' % (total_accuracy * 100,
                                                            set_size))
 
 
@@ -426,4 +426,4 @@ if __name__ == '__main__':
       help='Whether to check for invalid numbers during processing')
 
   FLAGS, unparsed = parser.parse_known_args()
-  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+  tf.compat.v1.app.run(main=main, argv=[sys.argv[0]] + unparsed)
