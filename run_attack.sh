@@ -35,7 +35,7 @@ sample_size=100
 
 # remove output dir if exists
 if [ -d output ] ; then
-    echo "Output directory already exists ! "
+    echo "Output directory already exists -- replacing! "
     rm -rf output
     # exit 1
 fi
@@ -48,7 +48,7 @@ do
     if [ -d "$dataset_dir/$label" ] && [[ $labels_list == *"$label"* ]]; then
         mkdir -p "output/data/$label"
         find "$dataset_dir/$label/" -name "*.wav" | sort -R \
-        | head -n$test_size | xargs -L1 cp -t "output/data/$label"
+        | head -n$test_size | gxargs -L1 gcp -t "output/data/$label"
     fi
 done
 

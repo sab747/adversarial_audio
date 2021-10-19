@@ -5,7 +5,7 @@ __pycache__/
 # Project python management
 .python-version
 
-# ipython checkpoinits
+# ipython checkpoints
 .ipynb_checkpoints/
 
 # checkpoints
@@ -20,3 +20,7 @@ frozen_graph/
 *.wav
 data/*
 speech_dataset/
+
+# outputs
+output/
+

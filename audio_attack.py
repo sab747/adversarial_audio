@@ -102,8 +102,8 @@ def score(sess, x, target, input_tensor, output_tensor):
         feed_dict={input_tensor: x})
     return output_preds
 
-def generate_attack(x_orig, target, limit, sess, input_node,
-    output_node, max_iters, eps_limit=256, verbose=False):
+def generate_attack(x_orig, target, eps_limit, sess, input_node,
+    output_node, max_iters, verbose=False):
     pop_size = 20
     elite_size = 2
     temp = 0.01
@@ -116,10 +116,10 @@ def generate_attack(x_orig, target, limit, sess, input_node,
         
         top_attack = initial_pop[pop_ranks[0]]
         top_pred = np.argmax(pop_scores[pop_ranks[0],:])
-        if verbose:
-            if top_pred == target:
-                print("*** SUCCESS ****")
+        
         if top_pred == target:
+            if verbose:
+                print("*** SUCCESS ****")
             return top_attack
 
         scores_logits = np.exp(target_scores /temp)
@@ -197,9 +197,9 @@ if __name__ == '__main__':
                 %(pbs, num_channels, sample_rate))
                 print("byte rate = %d" %(byte_rate))
 
-            assert pbs == 16, "Only PBS=16 is supported now" 
+            assert pbs == 16, "Only PBS=16 is supported now" # ??? pbs wasnt even being used in generate_attack.... was incorrectly passed into eps_limit variable
             attack_output = generate_attack(x_orig, target_idx, eps_limit,
-                sess, input_node_name, output_node, max_iters, pbs, verbose)
+                sess, input_node_name, output_node, max_iters, verbose)
             save_audiofile(attack_output, output_dir+'/'+input_file)
             end_time = time.time()
             print("Attack done (%d iterations) in %0.4f seconds" %(max_iters, (end_time-start_time)))
