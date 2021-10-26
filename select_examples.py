@@ -18,7 +18,7 @@ def convert_clips (sampled_clips, clips_label):
         convert_mp3_to_wav(clips_label, clip_path)
 
 def convert_mp3_to_wav (clips_label, clip_path):
-    sound = AudioSegment.from_mp3("./data/cv-corpus-7.0-singleword/en/clips/" + clip_path + ".mp3")
+    sound = AudioSegment.from_mp3("./data/cv-corpus-7.0-singleword/en/clips/" + clip_path)
     sound.export("./samples/" + clips_label + "/" + clip_path[:-4] + ".wav", format="wav")
     
 if __name__ == '__main__':
