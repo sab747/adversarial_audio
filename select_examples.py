@@ -29,5 +29,6 @@ if __name__ == '__main__':
 
     clips = pd.read_csv("./data/cv-corpus-7.0-singleword/en/validated.tsv", sep='\t')
     for label in labels:
+        os.mkdir("./samples/" + label)
         clips_for_label = select_clips(clips, label, 50)
         convert_clips(clips_for_label, label)
