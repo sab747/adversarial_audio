@@ -25,6 +25,7 @@ if __name__ == '__main__':
     
     sys.path.append('/path/to/ffmpeg')
     print(os.environ['PATH'])
+    os.mkdir("./samples")
     labels = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "yes", "no"]
 
     clips = pd.read_csv("./data/cv-corpus-7.0-singleword/en/validated.tsv", sep='\t')
