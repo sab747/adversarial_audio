@@ -120,7 +120,7 @@ def generate_attack(x_orig, target, eps_limit, sess, input_node,
         if top_pred == target:
             if verbose:
                 print("*** SUCCESS ****")
-            return top_attack
+            return top_attack, idx+1
 
         scores_logits = np.exp(target_scores /temp)
         pop_probs = scores_logits / np.sum(scores_logits)
@@ -129,7 +129,7 @@ def generate_attack(x_orig, target, eps_limit, sess, input_node,
             initial_pop[np.random.choice(pop_size, p=pop_probs)])
             for _ in range(pop_size - elite_size)]
         initial_pop = elite_set + [mutation(child, eps_limit) for child in child_set]
-    return top_attack
+    return top_attack, max_iters
         
 def save_audiofile(output, filename):        
     with open(filename, 'wb') as fh:
@@ -198,11 +198,11 @@ if __name__ == '__main__':
                 print("byte rate = %d" %(byte_rate))
 
             assert pbs == 16, "Only PBS=16 is supported now" # ??? pbs wasnt even being used in generate_attack.... was incorrectly passed into eps_limit variable
-            attack_output = generate_attack(x_orig, target_idx, eps_limit,
+            attack_output, iters = generate_attack(x_orig, target_idx, eps_limit,
                 sess, input_node_name, output_node, max_iters, verbose)
             save_audiofile(attack_output, output_dir+'/'+input_file)
             end_time = time.time()
-            print("Attack done (%d iterations) in %0.4f seconds" %(max_iters, (end_time-start_time)))
+            print("Attack done (%d/%d iterations) in %0.4f seconds" %(iters, max_iters, (end_time-start_time)))
                 
        
 
