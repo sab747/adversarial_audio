@@ -6,7 +6,7 @@ then
 fi
 output_dir=$1
 result_dir="$output_dir/result"
-labels_file="$2/conv_actions_labels.txt"
-graph_file="$2/conv_actions_frozen.pb"
+labels_file="$2/output_labels.txt"
+graph_file="$2/fully_trained_SC.pb"
 
-python3 evaluate_attack.py --output_dir=$result_dir --labels_file=$labels_file --graph_file=$graph_file
+python evaluate_attack.py --output-dir=$result_dir --labels-path=$labels_file --graph-path=$graph_file -v

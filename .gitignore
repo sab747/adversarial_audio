@@ -13,9 +13,6 @@ ckpts/
 *.ckpt*
 *.pbtxt
 
-# frozen graph
-frozen_graph/
-
 # dataset
 *.wav
 data/*
@@ -23,4 +20,5 @@ speech_dataset/
 
 # outputs
 output/
-
+output*
+eval_output.csv
