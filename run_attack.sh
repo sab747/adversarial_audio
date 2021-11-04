@@ -12,8 +12,8 @@ max_iters=$4
 test_size=$5
 
 
-frozen_graph="$ckpts_dir/conv_actions_frozen.pb"
-labels_file="$ckpts_dir/conv_actions_labels.txt"
+frozen_graph="$ckpts_dir/fully_trained_SC.pb"
+labels_file="$ckpts_dir/output_labels.txt"
 
 if [ ! -d $ckpts_dir ]; then
     echo "Checkpoints dir does not exist."
