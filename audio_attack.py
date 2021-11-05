@@ -224,7 +224,8 @@ if __name__ == '__main__':
                     sess, input_node_name, output_node, max_iters, verbose)
             except:
                 print(f'\tUnable to generate attack for audio file {input_file} -- likely too short')
-            
+                continue
+
             save_audiofile(attack_output, output_dir+'/'+input_file)
             end_time = time.time()
             print("Attack done (%d/%d iterations) in %0.4f seconds" %(iters, max_iters, (end_time-start_time)))
