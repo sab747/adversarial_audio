@@ -219,8 +219,12 @@ if __name__ == '__main__':
 
             assert pbs == 16, "Only PBS=16 is supported now" # ??? pbs wasnt even being used in generate_attack.... was incorrectly passed into eps_limit variable
 
-            attack_output, iters = generate_attack(x_orig, target_idx, eps_limit,
-                sess, input_node_name, output_node, max_iters, verbose)
+            try:
+                attack_output, iters = generate_attack(x_orig, target_idx, eps_limit,
+                    sess, input_node_name, output_node, max_iters, verbose)
+            except:
+                print(f'\tUnable to generate attack for audio file {input_file} -- likely too short')
+            
             save_audiofile(attack_output, output_dir+'/'+input_file)
             end_time = time.time()
             print("Attack done (%d/%d iterations) in %0.4f seconds" %(iters, max_iters, (end_time-start_time)))
