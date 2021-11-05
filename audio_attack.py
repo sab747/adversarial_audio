@@ -7,6 +7,7 @@
 import argparse
 import os, sys
 import numpy as np
+import random
 import sys
 import time
 import tensorflow as tf
@@ -44,14 +45,15 @@ def gen_population_member(x_orig, eps_limit):
     # if bps == 8:
     step = 2
     for i in range(header_len, len(x_orig), step):
-        if np.random.random() < mutation_p:
+        if random.random() < mutation_p:
         #    if np.random.random() < 0.5:
         #        new_bytearray[i] = min(255, new_bytearray[i]+1)
         #    else:
         #        new_bytearray[i] = max(0, new_bytearray[i]-1)
             int_x = int.from_bytes(x_orig[i:i+2], byteorder='little', signed=True)
-            new_int_x = min(data_max, max(data_min, int_x + np.random.choice(range(-eps_limit, eps_limit))))
-            new_bytes = int(new_int_x).to_bytes(2, byteorder='little', signed=True)
+            int_x = np.clip(int_x + np.random.choice(range(-eps_limit, eps_limit)), data_min, data_max)
+            # new_int_x = min(data_max, max(data_min, int_x + np.random.choice(range(-eps_limit, eps_limit))))
+            new_bytes = int(int_x).to_bytes(2, byteorder='little', signed=True)
             new_bytearray[i] = new_bytes[0]
             new_bytearray[i+1] = new_bytes[1]
     return bytes(new_bytearray)
@@ -59,12 +61,12 @@ def gen_population_member(x_orig, eps_limit):
 def crossover(x1, x2):
     ba1 = bytearray(x1)
     ba2 = bytearray(x2)
-    step = 2
+    step = 32
     # if bps == 8:
     #    step = 1
     for i in range(header_len, len(x1), step):
         if np.random.random() < 0.5:
-            ba2[i] = ba1[i]
+            ba2[i*step:i*step+step] = ba1[i*step:i*step+step]
     return bytes(ba2)
 
 # def refine(x_new, x_orig, pbs=16, limit=10):
@@ -89,12 +91,13 @@ def mutation(x, eps_limit):
         # ba[i] = max(0, min(255, np.random.choice(list(range(ba[i]-4, ba[i]+4)))))
         #elif np.random.random() < 0.10:
         #ba[i] = max(0, min(255, ba[i] + np.random.choice([-1, 1])))
-        if np.random.random() < mutation_p:
+        if random.random() < mutation_p:
             int_x = int.from_bytes(ba[i:i+2], byteorder='big', signed=True)
-            new_int_x = min(data_max, max(data_min, int_x + np.random.choice(range(-eps_limit, eps_limit))))
-            new_bytes = int(new_int_x).to_bytes(2, byteorder='big', signed=True)
-            ba[i] = new_bytes[0]
-            ba[i+1] = new_bytes[1]
+            int_x = np.clip(int_x + np.random.choice(range(-eps_limit, eps_limit)), data_min, data_max)
+            # new_int_x = min(data_max, max(data_min, int_x + np.random.choice(range(-eps_limit, eps_limit))))
+            # new_bytes = int(int_x).to_bytes(2, byteorder='big', signed=True)
+            ba[i:i+2] = int(int_x).to_bytes(2, byteorder='big', signed=True)
+            # ba[i+1] = new_bytes[1]
     return bytes(ba)
 
 def score(sess, x, target, input_tensor, output_tensor):
@@ -107,15 +110,24 @@ def generate_attack(x_orig, target, eps_limit, sess, input_node,
     pop_size = 20
     elite_size = 2
     temp = 0.01
-    initial_pop = [gen_population_member(x_orig, eps_limit) for _ in range(pop_size)]
+    start = time.time()
+    step = time.time()
+    initial_pop = np.array([gen_population_member(x_orig, eps_limit) for _ in range(pop_size)])
+    
+    if verbose: print(f'\tstarting main loop after {time.time()-start:0.4f}s')
     for idx in range(max_iters):
+        step = time.time()
+
         pop_scores = np.array([score(sess, x, target, input_node, output_node) for x in initial_pop])
         target_scores = pop_scores[:, target]
-        pop_ranks = list(reversed(np.argsort(target_scores)))
-        elite_set = [initial_pop[x] for x in pop_ranks[:elite_size]]
         
-        top_attack = initial_pop[pop_ranks[0]]
+        pop_ranks = list(reversed(np.argsort(target_scores)[-elite_size:]))
+        elite_set = [initial_pop[x] for x in pop_ranks]
+        
+        top_attack = elite_set[0]
         top_pred = np.argmax(pop_scores[pop_ranks[0],:])
+        
+        if verbose: print(f'\ttop attack identified after {time.time()-step:0.4f}s')
         
         if top_pred == target:
             if verbose:
@@ -128,7 +140,13 @@ def generate_attack(x_orig, target, eps_limit, sess, input_node,
             initial_pop[np.random.choice(pop_size, p=pop_probs)],
             initial_pop[np.random.choice(pop_size, p=pop_probs)])
             for _ in range(pop_size - elite_size)]
+
+        if verbose: print(f'\tchild set generated after {time.time()-step:0.4f}s')
+        
         initial_pop = elite_set + [mutation(child, eps_limit) for child in child_set]
+
+        if verbose: print(f'\titeration {idx+1} done after {time.time()-step:0.4f}s  [{time.time()-step:0.4f}s]')
+
     return top_attack, max_iters
         
 def save_audiofile(output, filename):        
@@ -174,6 +192,8 @@ if __name__ == '__main__':
     target_idx = target_idx[0]
 
     load_graph(graph_path)
+    print(f'Graph loaded from {graph_path}')
+
     with tf.compat.v1.Session() as sess:
         output_node = sess.graph.get_tensor_by_name(output_node_name) 
         for input_file in wav_files_list:
@@ -198,6 +218,7 @@ if __name__ == '__main__':
                 print("byte rate = %d" %(byte_rate))
 
             assert pbs == 16, "Only PBS=16 is supported now" # ??? pbs wasnt even being used in generate_attack.... was incorrectly passed into eps_limit variable
+
             attack_output, iters = generate_attack(x_orig, target_idx, eps_limit,
                 sess, input_node_name, output_node, max_iters, verbose)
             save_audiofile(attack_output, output_dir+'/'+input_file)
